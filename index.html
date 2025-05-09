@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<!-- saved from url=(0033)https://QicongXie.github.io/end2endvc/ -->
+<html lang="en-US">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+
+  <!-- Begin Jekyll SEO tag v2.7.1 -->
+  <title>FlexSpeech: Towards Stable, Controllable and Expressive Text-to-Speech</title>
+  <meta name="generator" content="Jekyll v3.9.0">
+  <meta property="og:title" content="title">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary">
+  <!-- End Jekyll SEO tag -->
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#157878">
+  <link rel="stylesheet" href="style.css">
+  <style>
+        .method {
+            display: inline-block;
+            font-weight: bold;
+        }
+
+        .explanation {
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body data-new-gr-c-s-check-loaded="14.1001.0" data-gr-ext-installed="">
+  <section class="page-header">
+    <!-- <h1 class="project-name">Demo PAGE</h1> -->
+    <!-- <h2 class="project-tagline"></h2> -->
+
+
+  </section>
+
+  <section class="main-content">
+    <h1 id="">
+      <center>FlexSpeech: Towards Stable, Controllable and Expressive Text-to-Speech</center>
+    </h1>
+
+    <h3 id="">
+      <center>A work submitted to ACMMM 2025</center>
+    </h3>
+
+
+
+    <br><br>
+    <h2 id="abstract">1. Abstract<a name="abstract"></a></h2>
+    <p>Current speech generation research can be categorized into two primary classes: non-autoregressive (NAR) and 
+      autoregressive (AR). The fundamental distinction between these approaches lies in the duration prediction strategy
+      employed for predictable-length sequences. The NAR methods ensure stability in speech generation by explicitly and 
+      independently modeling the duration of each phonetic unit. Conversely, AR methods employ an autoregressive paradigm to 
+      predict the compressed speech token by implicitly modeling duration with Markov properties. Although this approach improves 
+      prosody, it does not provide the structural guarantees necessary for stability. To simultaneously address the issues of 
+      stability and naturalness in speech generation, we propose FlexSpeech, a stable, controllable, and expressive TTS model. 
+      The motivation behind FlexSpeech is to incorporate Markov dependencies and preference optimization directly on the duration 
+      predictor to boost its naturalness while maintaining explicit modeling of the phonetic units to ensure stability. 
+      Specifically, we decompose the speech generation task into two components: an AR duration predictor and a NAR acoustic 
+      model. The acoustic model is trained on a substantial amount of data to learn to render audio more stably, given reference 
+      audio prosody and phone durations. The duration predictor is optimized in a lightweight manner for different stylistic 
+      variations, thereby enabling rapid style transfer while maintaining a decoupled relationship with the specified speaker timbre.
+      Experimental results demonstrate that our approach achieves SOTA stability and naturalness in zero-shot TTS. More importantly, 
+      when transferring to a specific stylistic domain, we can accomplish lightweight optimization of the duration module solely with 
+      about 100 data samples, without the need to adjust the acoustic model, thereby enabling rapid and stable style transfer.</p>
+    <br><br>
+
+        <center><img src='raw/fig/overview_new.png' width="70%"></center>
+        <br><br>
+        <center><span><b>Figure 1. Overview of FlexSpeech. (a). The architecture of FlexSpeech acoustic model. 
+          The phoneme embeddings, repeated speaker embeddings, and random noise are concatenated along the channel 
+          dimension to form the input to the model, which then predicts a mel-spectrogram of the same length. 
+          (b). Duration model and preference alignment. The decoder predicts current phoneme duration in an 
+          autoregressive manner, based on the hidden state and previous phoneme durations.</b></span></center>
+
+    <br><br>
+
+
+
+
+
+
+
+
+
+
+
+
+    <h2>2. Comparison with Other Methods <a name="Comparison"></a></h2>
+    <p>We compared our models with previous state-of-the-art (SOTA) zero-shot TTS systems. Besides better speech quality, FlexSpeech generates more natural speech, better matching the speech prosody in the prompt.</p>
+    <table>
+      <tbody id="tbody_speech">
+        <!-- 表头 -->
+        <tr>
+          <td style="text-align: center; width: 20%;"><strong>Text</strong></td>
+          <td style="text-align: center; width: 12%;"><strong>Prompt</strong></td>
+          <td style="text-align: center; width: 12%;"><strong>FlexSpeech (Proposed)</strong></td>
+          <td style="text-align: center; width: 12%;"><strong>FireRedTTS</strong></td>
+          <td style="text-align: center; width: 12%;"><strong>MaskGCT</strong></td>
+          <td style="text-align: center; width: 12%;"><strong>CosyVoice</strong></td>
+          <td style="text-align: center; width: 12%;"><strong>F5-TTS</strong></td>
+
+        </tr>
+        <!-- 第一行：audio方式 -->
+        <tr>
+          <td style="text-align: center">In her country she is also well known for her popularization activities.</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/f5_speedcontrol_2.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/f5_speedcontrol_2-seed_19671293.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/f5_speedcontrol_2-seed_19671293_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/f5_speedcontrol_2-seed_19671293_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/f5_speedcontrol_2-seed_19671293_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/f5_speedcontrol_2-seed_19671293_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">He darted through the trees and paused a tall man strongly but slimly made.</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/mega2_1.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/mega2_1-testclean_1995_1837_0029.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/mega2_1-testclean_1995_1837_0029_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/mega2_1-testclean_1995_1837_0029_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/mega2_1-testclean_1995_1837_0029_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/mega2_1-testclean_1995_1837_0029_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">The last lineage diversified rapidly, and became the ancestor of most Australian "Atriplex" species.</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/mega2_4.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/mega2_4-seed_21345626.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/mega2_4-seed_21345626_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/mega2_4-seed_21345626_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/mega2_4-seed_21345626_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/mega2_4-seed_21345626_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">Underwater demolition specialists may still be referred to as underwater demolition teams.</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/mega2_petergriffin.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/mega2_petergriffin-seed_19730680.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/mega2_petergriffin-seed_19730680_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/mega2_petergriffin-seed_19730680_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/mega2_petergriffin-seed_19730680_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/mega2_petergriffin-seed_19730680_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">They then applied the defined solarisation curve to real time video images.</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/mega3_trump.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/mega3_trump-seed_23176029.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/mega3_trump-seed_23176029_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/mega3_trump-seed_23176029_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/mega3_trump-seed_23176029_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/mega3_trump-seed_23176029_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">Toward the end of the afternoon, they came upon a Coptic monastery.</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/mega3_trump.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/mega3_trump-seed_209237.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/mega3_trump-seed_209237_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/mega3_trump-seed_209237_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/mega3_trump-seed_209237_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/mega3_trump-seed_209237_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">When it comes to the crunch, our company will become insolvent.</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/tdxq_000056.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/tdxq_000056-seed_10933822.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/tdxq_000056-seed_10933822_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/tdxq_000056-seed_10933822_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/tdxq_000056-seed_10933822_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/tdxq_000056-seed_10933822_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">It presents weapons, vehicles and uniforms, as well as abundant documentation history.</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/tdxq_000056.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/tdxq_000056-seed_19724028.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/tdxq_000056-seed_19724028_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/tdxq_000056-seed_19724028_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/tdxq_000056-seed_19724028_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/tdxq_000056-seed_19724028_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">The results of the test were inconclusive, and it has not been repeated.</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/tdxq_000066.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/tdxq_000066-seed_17662956.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/tdxq_000066-seed_17662956_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/tdxq_000066-seed_17662956_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/tdxq_000066-seed_17662956_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/tdxq_000066-seed_17662956_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">As research continued, the protective effect of fluoride against dental decay was demonstrated.</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/tdxq_000066.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/tdxq_000066-seed_22364186.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/tdxq_000066-seed_22364186_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/tdxq_000066-seed_22364186_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/tdxq_000066-seed_22364186_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/tdxq_000066-seed_22364186_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">Today, the old observatory is no longer used for research.</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/tdxq_001250.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/tdxq_001250-seed_37237247.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/tdxq_001250-seed_37237247_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/tdxq_001250-seed_37237247_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/tdxq_001250-seed_37237247_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/tdxq_001250-seed_37237247_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">Oh mademoiselle, why have i not a devoted sister or a true friend such as yourself ?</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/en_2.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/en_2-testclean_7127_75947_0016.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/en_2-testclean_7127_75947_0016_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/en_2-testclean_7127_75947_0016_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/en_2-testclean_7127_75947_0016_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/en_2-testclean_7127_75947_0016_f5.wav"></audio></td>
+        </tr>
+
+        <tr>
+          <td style="text-align: center">Well, you shouldn't have any trouble then.</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/tdxq_000019.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/tdxq_000019-seed_17519988.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/tdxq_000019-seed_17519988_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/tdxq_000019-seed_17519988_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/tdxq_000019-seed_17519988_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/tdxq_000019-seed_17519988_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">This subsequently was renamed "The Magazine".</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/f5_seedtts_en_1.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/f5_seedtts_en_1-seed_19767977.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/f5_seedtts_en_1-seed_19767977_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/f5_seedtts_en_1-seed_19767977_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/f5_seedtts_en_1-seed_19767977_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/f5_seedtts_en_1-seed_19767977_f5.wav"></audio></td>
+        </tr>
+
+
+
+
+
+
+
+
+
+        <tr>
+          <td style="text-align: center">网购花瓶写着“ins风小众设计”，到货发现是奶奶腌酸菜的土陶罐。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/gct_dingzhen.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/gct_dingzhen-other194.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/gct_dingzhen-other194_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/gct_dingzhen-other194_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/gct_dingzhen-other194_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/gct_dingzhen-other194_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">拖地时发现沙发底藏着失踪三年的耳环！旁边还有猫主子的乳牙，简直考古现场。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/gct_dingzhen.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/gct_dingzhen-other318.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/gct_dingzhen-other318_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/gct_dingzhen-other318_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/gct_dingzhen-other318_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/gct_dingzhen-other318_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">哇！刚刚试穿了那件一直心仪的衣服，不仅合适，还特别好看！</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/gct_dingzhen.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/gct_dingzhen-other079.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/gct_dingzhen-other079_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/gct_dingzhen-other079_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/gct_dingzhen-other079_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/gct_dingzhen-other079_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">为了抢演唱会门票，定十个闹钟，结果紧张到失眠，刷票时手抖买成儿童场，现在要装萝莉混进场。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/antman_5.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/antman_5-other390.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/antman_5-other390_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/antman_5-other390_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/antman_5-other390_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/antman_5-other390_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">今天真的好累，晚上一回家就想好好休息。累的时候开心地睡上一觉也是一种小小的幸福。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/gct_bachongshenzi.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/gct_bachongshenzi-other279.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/gct_bachongshenzi-other279_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/gct_bachongshenzi-other279_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/gct_bachongshenzi-other279_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/gct_bachongshenzi-other279_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">因为我们悄悄走过，所以当时那些惊涛骇浪都烟消云散。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/f5_robust_4.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/f5_robust_4-seed_00004643_00000072.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/f5_robust_4-seed_00004643_00000072_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/f5_robust_4-seed_00004643_00000072_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/f5_robust_4-seed_00004643_00000072_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/f5_robust_4-seed_00004643_00000072_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">突然，身边一阵笑声。我看着他们意气风发地挺直了胸膛，甩了甩那稍显肉感的双臂，轻笑道，我身上的肉是为了掩饰我爆棚的魅力，否则，岂不吓坏了你们呢？</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/f5_seedtts_zh_tyzr.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/f5_seedtts_zh_tyzr-tyzr01.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/f5_seedtts_zh_tyzr-tyzr01_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/f5_seedtts_zh_tyzr-tyzr01_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/f5_seedtts_zh_tyzr-tyzr01_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/f5_seedtts_zh_tyzr-tyzr01_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">最近总想着去郊外野餐，享受一下自然的宁静。坐在草地上吃点美食，感觉生活简单而美好。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/f5_seedtts_zh_tyzr.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/f5_seedtts_zh_tyzr-other291.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/f5_seedtts_zh_tyzr-other291_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/f5_seedtts_zh_tyzr-other291_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/f5_seedtts_zh_tyzr-other291_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/f5_seedtts_zh_tyzr-other291_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">最近在学习新的食谱，尝试多做些不同的菜肴。虽然有难度，但希望能在烹饪中找到乐趣。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/mochenxiang_8.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/mochenxiang_8-other141.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/mochenxiang_8-other141_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/mochenxiang_8-other141_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/mochenxiang_8-other141_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/mochenxiang_8-other141_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">面试的公司刚发邮件确认时间，一下子有点紧张，要赶紧准备好材料。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/moqianxue_37.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/moqianxue_37-other004.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/moqianxue_37-other004_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/moqianxue_37-other004_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/moqianxue_37-other004_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/moqianxue_37-other004_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">上午工作特别忙，密集的会议和文件处理，不过下午我们可以抽点时间聊聊心事，放松一下。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/yuanshen_000016.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/yuanshen_000016-other046.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/yuanshen_000016-other046_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/yuanshen_000016-other046_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/yuanshen_000016-other046_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/yuanshen_000016-other046_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">他的家里，挤满了要追求他太太潘妮洛普的无赖们，白吃白喝混着。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/yuanshen_000016.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/yuanshen_000016-seed_00004803_00000117.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/yuanshen_000016-seed_00004803_00000117_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/yuanshen_000016-seed_00004803_00000117_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/yuanshen_000016-seed_00004803_00000117_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/yuanshen_000016-seed_00004803_00000117_f5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">最近工作压力挺大的，真希望能够早点放假，好好休息一下。这样可以有更多时间做自己喜欢的事情。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/ref/yuanshen_000172.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/zeroshot_demo/yuanshen_000172-other240.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/fireredtts/yuanshen_000172-other240_fireredtts.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/maskgct/yuanshen_000172-other240_maskgct.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/cosyvoice/yuanshen_000172-other240_cv.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/comparison/f5-tts/yuanshen_000172-other240_f5.wav"></audio></td>
+        </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h2>3. Rapid Style Transfer <a name="style-transfer"></a></h2>
+    <p>Despite utilizing only a few dozen win-lose data pairs for direct preference optimization, it has been proven to 
+      significantly enhance the stability and naturalness of FlexSpeech. Thanks to the high controllability 
+      of our framework, we can rapidly transfer any specific style with a few dozen data pairs onto speakers. 
+      We conduct experiments on the open-source StoryTTS dataset, which is a highly expressive storytelling TTS dataset 
+      from the recording of a Mandarin storytelling show. 
+      <b>We achieved effortlessly transferring this style to unseen speakers using just 100 data pairs. </b></p>
+    <table>
+      <tbody id="rapid_style_transfer">
+        <!-- 表头 -->
+        <tr>
+          <td style="text-align: center; width: 20%;"><strong>Text</strong></td>
+          <td style="text-align: center; width: 20%;"><strong>Style Prompt</strong></td>
+          <td style="text-align: center; width: 20%;"><strong>Zero-shot Speaker</strong></td>
+          <td style="text-align: center; width: 20%;"><strong>FlexSpeech (Proposed)</strong></td>
+        </tr>
+        <!-- 第一行：audio方式 -->
+        <tr>
+          <td style="text-align: center">既然是东方大哥的故旧，那就请他坐下来谈谈吧。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/stype_prompt/e85s028.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/speaker/eo_male.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/res/eo_male_e85s028-e42s052_1.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">你亲自下手把灌夫毒死了，是为百姓除一大害啊。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/stype_prompt/e87s127.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/speaker/eo_male.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/res/eo_male_e87s127-e47s199_5.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">许贾心说，你的女儿要去做小老婆，我许甲有什么舍不得的？</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/stype_prompt/e21s096.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/speaker/eo_female.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/res/eo_female_e21s096-e103s045_0.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">公主传出话来，不许我去见他，那你说我怎么敢轻易迈进公主的卧室呢？</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/stype_prompt/e85s028.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/speaker/eo_female.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/res/eo_female_e85s028-e106s158_7.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">对呀，东方爱卿，你解释的不错呀。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/stype_prompt/e87s127.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/speaker/y132.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/res/y132_e87s127-e133s109_6.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">武帝没看出李延年的变化，手捋胡须也是哈哈大笑。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/stype_prompt/e87s127.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/speaker/y132.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/res/y132_e87s127-e148s038_2.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">灌爷家的事，你小子也敢管？</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/stype_prompt/e21s096.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/speaker/y214.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/res/y214_e21s96-e41s8_2.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">要不然你在这替我坚守大营，我把去病给拽回来。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/stype_prompt/e87s127.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/speaker/y214.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/res/y214_e87s127-e157s240_2.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">大枪在手中一捋。这些兵丁一看，这小子拿出枪来，我们也拿兵刃吧。每个人全都拿起了兵刃。霍去病武艺高强，本领出众，艺高人胆大，一会儿的功夫，一枪一个，一枪一个，就连挑了五个兵丁，把这五个大个的兵全都挑到马下了。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/stype_prompt/e114s093.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/speaker/y214.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/res/y214-e36-s174.wav"></audio></td>
+        </tr>
+        <tr>
+          <td style="text-align: center">狄山一听皇上要传旨，他跪着呢，就跪着往前爬，爬到皇上面前，“皇上啊请您开恩哪！皇上啊！臣狄山可以献出女儿，可是您要知道臣是个读书之人，手无缚鸡之力，再说身体也不好常年多病啊。</td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/stype_prompt/e114s093.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/speaker/y214.wav"></audio></td>
+          <td style="text-align: center"><audio style="width: 100%;" controls="" src="./raw/styletransfer/res/y214-e144-s032.wav"></audio></td>
+        </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+    <h2>5. Duration Control <a name="Controllability"></a></h2>
+    <p>We use a case study to demonstrate FlexSpeech's fine-grained duration control capability.  
+      We perturb one of the phonemes by a coefficient of 1.25, 
+      resulting in audio output with greater or smaller duration for that specific phoneme which is highlighted by the red box. 
+      And we apply the coefficient to the durations of all phonemes in the sentence.</p>
+
+    <!-- 新增的第一个表格 -->
+    <table>
+      <tbody>
+        <!-- 表头 -->
+        <tr>
+          <td style="text-align: center; width: 33%;"><strong>FlexSpeech (Proposed)</strong></td>
+          <td style="text-align: center; width: 33%;"><strong>Phoneme-level Duration Control (1.25 times faster for the phoneme in the red box)</strong></td>
+          <td style="text-align: center; width: 33%;"><strong>Sentence-level Duration Control (1.25 times faster)</strong></td>
+        </tr>
+        <!-- 第一行：audio和图片 -->
+        <tr>
+          <td style="text-align: center">
+            <audio style="width: 100%;" controls="" src="./raw/durationcontrol/audio1_1.wav"></audio>
+            <br>
+            <img src="./raw/durationcontrol/image1_1.png" width="100%">
+          </td>
+          <td style="text-align: center">
+            <audio style="width: 100%;" controls="" src="./raw/durationcontrol/audio1_2.wav"></audio>
+            <br>
+            <img src="./raw/durationcontrol/image1_2.png" width="100%">
+          </td>
+          <td style="text-align: center">
+            <audio style="width: 100%;" controls="" src="./raw/durationcontrol/audio1_3.wav"></audio>
+            <br>
+            <img src="./raw/durationcontrol/image1_3.png" width="100%">
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- 新增的第二个表格 -->
+    <table>
+      <tbody>
+        <!-- 表头 -->
+        <tr>
+          <td style="text-align: center; width: 33%;"><strong>FlexSpeech (Proposed)</strong></td>
+          <td style="text-align: center; width: 33%;"><strong>Phoneme-level Duration Control (1.25 times slower for the phoneme in the red box)</strong></td>
+          <td style="text-align: center; width: 33%;"><strong>Sentence-level Duration Control (1.25 times slower)</strong></td>
+        </tr>
+        <!-- 第一行：audio和图片 -->
+        <tr>
+          <td style="text-align: center">
+            <audio style="width: 100%;" controls="" src="./raw/durationcontrol/audio2_1.wav"></audio>
+            <br>
+            <img src="./raw/durationcontrol/image2_1.png" width="100%">
+          </td>
+          <td style="text-align: center">
+            <audio style="width: 100%;" controls="" src="./raw/durationcontrol/audio2_2.wav"></audio>
+            <br>
+            <img src="./raw/durationcontrol/image2_2.png" width="100%">
+          </td>
+          <td style="text-align: center">
+            <audio style="width: 100%;" controls="" src="./raw/durationcontrol/audio2_3.wav"></audio>
+            <br>
+            <img src="./raw/durationcontrol/image2_3.png" width="100%">
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+</html>
+
+
+
